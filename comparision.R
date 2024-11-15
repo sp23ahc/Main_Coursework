@@ -1,0 +1,42 @@
+# Load necessary library
+library(readr)
+
+# Load the dataset
+horse_data <- read_csv("D:\\Main_Coursework-main\\horse.csv")
+# Rename columns
+names(horse_data)[4] <- "rectal_temp"
+names(horse_data)[5] <- "pulse"
+
+# Filter out unrealistic values
+df5 <- subset(horse_data, rectal_temp < 100 & pulse < 150)
+
+# Create a binary grouping variable based on rectal_temp threshold
+df5$rectal_temp_group <- ifelse(df5$rectal_temp < 38, "Low Temp", "High Temp")
+
+# Check normality of 'pulse' for each group
+shapiro_low <- shapiro.test(df5$pulse[df5$rectal_temp_group == "Low Temp"])
+shapiro_high <- shapiro.test(df5$pulse[df5$rectal_temp_group == "High Temp"])
+
+print(shapiro_low)
+print(shapiro_high)
+
+# Select the test based on normality
+if (shapiro_low$p.value > 0.05 & shapiro_high$p.value > 0.05) {
+  # Perform independent t-test for normal data
+  t_test_result <- t.test(pulse ~ rectal_temp_group, data = df5, var.equal = TRUE)
+  cat("Using t-test:\n")
+  print(t_test_result)
+} else {
+  # Perform Mann-Whitney U test for non-normal data
+  mann_whitney_result <- wilcox.test(pulse ~ rectal_temp_group, data = df5)
+  cat("Using Mann-Whitney U test:\n")
+  print(mann_whitney_result)
+}
+
+# Visualize the data: Boxplot for comparison
+boxplot(pulse ~ rectal_temp_group, data = df5, 
+        main = "Comparison of Pulse Between Rectal Temperature",
+        xlab = "Rectal Temperature", ylab = "Pulse",
+        col = c("lightblue", "lightgreen"))
+
+
